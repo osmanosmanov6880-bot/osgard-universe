@@ -1,4 +1,5 @@
 import { AREAS, setLocale, locale, t, esc, productUrl, read, write } from './core.mjs';
+import { gamesPage, gameClick, gameField } from './games.mjs';
 const app=document.getElementById('app');
 const paths={'/':'home','/play':'play','/intelligence':'intelligence','/academy':'academy','/development':'development'};
 function icon(){return '<span aria-hidden="true">↗</span>'}
@@ -51,12 +52,15 @@ export function render(options={}){
  document.documentElement.lang=locale()==='zh'?'zh-CN':locale();
  document.documentElement.dataset.motion=read('reduced',false)?'reduced':'full';
  document.title='OSGARD Universe · '+(key? t(key):'404');
- const page=path==='/'?home():key?placeholder(key):'<main id="main" tabindex="-1" class="page"><h1>404</h1><a href="/" data-nav>'+esc(t('back'))+'</a></main>';
+ const page=path==='/'?home():path==='/play'?gamesPage():key?placeholder(key):'<main id="main" tabindex="-1" class="page"><h1>404</h1><a href="/" data-nav>'+esc(t('back'))+'</a></main>';
  app.innerHTML=header(path)+page+footer();
+ if(options.refocus){const active=app.querySelector(options.refocus);active?.focus({preventScroll:true});if(typeof options.selection==='number'&&active?.setSelectionRange)active.setSelectionRange(options.selection,options.selection)}
+ if(options.scrollDetails)app.querySelector('.game-detail')?.scrollIntoView({block:'start'});
  if(options.focus)document.getElementById('main')?.focus({preventScroll:true});
  if(options.hash&&location.hash)document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
 }
 document.addEventListener('click',event=>{
+ if(location.pathname==='/play'&&gameClick(event,render))return;
  if(event.target.closest('#motion-toggle')){write('reduced',!read('reduced',false));render();return}
  const a=event.target.closest('a[data-nav]');
  if(!a||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey||a.origin!==location.origin)return;
@@ -66,6 +70,7 @@ document.addEventListener('click',event=>{
  render({focus:true,hash:true});
  if(!a.hash)scrollTo({top:0,behavior:'instant'});
 });
-document.addEventListener('change',event=>{if(event.target.id==='lang-select'){setLocale(event.target.value);render()}});
+document.addEventListener('input',event=>{if(location.pathname==='/play')gameField(event,render)});
+document.addEventListener('change',event=>{if(event.target.id==='lang-select'){setLocale(event.target.value);render();return}if(location.pathname==='/play')gameField(event,render)});
 window.addEventListener('popstate',()=>render({focus:true,hash:true}));
 render({hash:true});
